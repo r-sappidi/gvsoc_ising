@@ -1,18 +1,19 @@
-# Convenience wrapper — prefer just `conda activate gvsoc`.
-#   source gvsoc_env.sh   ==   conda activate gvsoc
-#   gvrun --target ara_v2 --param soc/binary=$PWD/pulp/examples/rvv_fconv2d run
+# Convenience wrapper: activate the build/run env + set up gvrun's runtime paths.
+#   source gvsoc_env.sh
+#   gvrun --target teranoc --param binary=<elf> run
 #
-# The `gvsoc` conda env (cloned 2026-07-08 from `teranoc`, which stays shared with
-# the ising project) now self-configures on activation: its activate.d hook puts
-# gvrun on PATH and sets LD_LIBRARY_PATH (conda's libstdc++/libz + this checkout's
-# install/lib). So activation alone is sufficient — this file just does that.
-source "$HOME/miniforge3/etc/profile.d/conda.sh"
-conda activate gvsoc
+# The `azilla` conda env (see ../AZilla-Sim/environment.yml) provides the conda gcc-15
+# toolchain + Python. gvrun needs its install on PATH and conda's libstdc++ + the model
+# .so's on LD_LIBRARY_PATH — set explicitly here (no reliance on a machine-local hook).
+source "$(conda info --base 2>/dev/null || echo "$HOME/miniforge3")/etc/profile.d/conda.sh"
+conda activate azilla
+
+GVSOC_HOME="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+source "$GVSOC_HOME/sourceme.sh" 2>/dev/null || export PATH="$GVSOC_HOME/install/bin:$PATH"
+export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:$GVSOC_HOME/install/lib:$LD_LIBRARY_PATH"
 
 # For rebuilding models:
-#   export CMAKE_FLAGS='-j8' CXX=x86_64-conda-linux-gnu-g++ CC=x86_64-conda-linux-gnu-gcc
-#   export LIBRARY_PATH="$CONDA_PREFIX/lib:$LIBRARY_PATH"
-#   make build TARGETS='ara_v2 teranoc'
+#   export CMAKE_FLAGS='-j8' LIBRARY_PATH="$CONDA_PREFIX/lib:$LIBRARY_PATH"
+#   make build TARGETS='teranoc'
 
-echo "GVSoC env ready (conda env: gvsoc, python $(python --version 2>&1 | awk '{print $2}'))."
-echo "Run e.g.:  gvrun --target ara_v2 --param soc/binary=\$PWD/pulp/examples/rvv_fconv2d run"
+echo "GVSoC env ready (conda env: azilla, python $(python --version 2>&1 | awk '{print $2}'))."
