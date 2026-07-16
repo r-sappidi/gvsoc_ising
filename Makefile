@@ -65,7 +65,7 @@ all: checkout build
 checkout:
 	git submodule update --recursive --init
 
-.PHONY: build gui
+.PHONY: build gui check-cxx17
 
 ifdef DEBUG
 BUILD_TYPE = RelWithDebInfo
@@ -73,7 +73,20 @@ else
 BUILD_TYPE = Release
 endif
 
-gvrun.build:
+# Preflight: GVSoC's models require C++17. If a pre-C++17 system compiler (e.g. an
+# old /usr/bin gcc) is picked up instead of the build env's toolchain, CMake fails
+# deep in generation with ~1000 "requires the language dialect CXX17" errors. Catch
+# it here with one actionable line. CMake selects the CXX env var (else c++/g++ from
+# PATH), so probe the exact compiler it will use.
+check-cxx17:
+	@cxx="$${CXX:-c++}"; \
+	  printf 'int main(){return 0;}\n' | "$$cxx" -std=c++17 -x c++ - -o /dev/null 2>/dev/null || { \
+	    echo "ERROR: C++ compiler '$$cxx' cannot compile C++17 (GVSoC needs GCC >= 5 or Clang >= 5)."; \
+	    echo "       Active compiler: $$("$$cxx" --version 2>/dev/null | head -1 || echo 'not found')"; \
+	    echo "       Activate the build toolchain first (e.g. conda activate azilla), then rebuild."; \
+	    exit 1; }
+
+gvrun.build: | check-cxx17
 	$(CMAKE) -S gvrun -B $(BUILDDIR)/gvrun -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 		-DCMAKE_INSTALL_PREFIX=$(INSTALLDIR)
 
