@@ -3,7 +3,7 @@
 	url = https://github.com/gvsoc/gvsoc-core.git
 [submodule "pulp"]
 	path = pulp
-	url = git@github.com:r-sappidi/gvsoc-pulp_ising.git
+	url = https://github.com/r-sappidi/gvsoc-pulp_ising.git
 [submodule "gvtest"]
 	path = gvtest
 	url =  https://github.com/gvsoc/gvtest.git
